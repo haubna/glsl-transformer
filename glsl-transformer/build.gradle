@@ -112,8 +112,8 @@ publishOnCentral {
   projectLongName.set('glsl-transformer')
   projectUrl.set('https://github.com/IrisShaders/glsl-transformer')
   scmConnection.set('git@github.com:IrisShaders/glsl-transformer.git')
-  licenseName.set('GNU Lesser General Public License v3.0')
-  licenseUrl.set('https://www.gnu.org/licenses/lgpl-3.0.en.html')
+  licenseName.set('GNU General Public License v3.0 with exceptions')
+  licenseUrl.set('https://www.gnu.org/licenses/gpl-3.0.en.html')
 }
 
 publishing {
