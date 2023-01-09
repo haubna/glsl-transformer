@@ -7,6 +7,12 @@
  * This project uses @Incubating APIs which are subject to change.
  */
 
+buildscript {
+  repositories {
+    gradlePluginPortal()
+  }
+}
+
 plugins {
   // Apply the java-library plugin for API and implementation separation.
   id 'java-library'
@@ -16,17 +22,18 @@ plugins {
   id 'org.danilopianini.publish-on-central' version '0.7.5' // a newer version 2.0.6 exists but it's annoying to use
   id 'jacoco'
   id 'com.adarshr.test-logger' version '3.2.0'
+  id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
 group = 'io.github.douira'
-version = '2.0.0-pre8'
+version = '1.0.1'
 
 repositories {
   // Use Maven Central for resolving dependencies.
   mavenCentral()
 }
 
-def antlrVersion = '4.11.1'
+def antlrVersion = '4.10.1'
 def jabelVersion = '0.4.2'
 
 dependencies {
@@ -41,57 +48,22 @@ dependencies {
   compileOnly group: 'com.github.bsideup.jabel', name:'jabel-javac-plugin', version: jabelVersion
 }
 
+shadowJar {
+  archiveBaseName.set('shadow')
+  archiveClassifier.set('')
+  archiveVersion.set('')
+
+  relocate 'org', 'physics.org'
+  relocate 'com', 'physics.com'
+}
+
 generateGrammarSource {
   maxHeapSize = '128m'
-  arguments += ['-package', 'io.github.douira.glsl_transformer', '-visitor']
-  outputDirectory = new File(buildDir.toString() + '/generated-src/antlr/main/io/github/douira/glsl_transformer/')
+  arguments += ['-package', 'io.github.douira.glsl_transformer_physics', '-visitor']
+  outputDirectory = new File(buildDir.toString() + '/generated-src/antlr/main/io/github/douira/glsl_transformer_physics/')
 }
 compileJava.dependsOn generateGrammarSource
 sourcesJar.dependsOn generateGrammarSource
-
-testing {
-  suites {
-    // Configure the built-in test suite
-    test {
-      // Use JUnit Jupiter test framework
-      useJUnitJupiter('5.9.0')
-    }
-  }
-}
-
-test {
-  // report is always generated after tests run
-  finalizedBy jacocoTestReport
-  testLogging.showStandardStreams = true
-  maxParallelForks = System.getenv('CI') ? 1 : Runtime.runtime.availableProcessors() / 2
-  outputs.upToDateWhen { false }
-}
-
-testlogger {
-  theme 'standard-parallel'
-  slowThreshold 5000
-  showSimpleNames true
-  showPassed false
-}
-
-jacocoTestReport {
-  // tests are required to run before generating the report
-  dependsOn test
-  reports {
-    xml.required = true
-    html.required = true
-  }
-
-  // doesn't actually seem to exclude the files
-  afterEvaluate {
-    classDirectories.setFrom(files(classDirectories.files.collect {
-      fileTree(dir: it, exclude: [
-        '**/GLSLParser*.java',
-        '**/GLSLLexer*.java'
-      ])
-    }))
-  }
-}
 
 configure([tasks.compileJava]) {
   sourceCompatibility = 16 // for the IDE support
@@ -112,8 +84,8 @@ publishOnCentral {
   projectLongName.set('glsl-transformer')
   projectUrl.set('https://github.com/IrisShaders/glsl-transformer')
   scmConnection.set('git@github.com:IrisShaders/glsl-transformer.git')
-  licenseName.set('GNU General Public License v3.0 with exceptions')
-  licenseUrl.set('https://www.gnu.org/licenses/gpl-3.0.en.html')
+  licenseName.set('GNU Lesser General Public License v3.0')
+  licenseUrl.set('https://www.gnu.org/licenses/lgpl-3.0.en.html')
 }
 
 publishing {
@@ -145,5 +117,4 @@ javadoc {
   exclude '**/GLSLParser*.java'
   exclude '**/GLSLLexer*.java'
   exclude '**/ast/Type.java'
-  exclude '**/org/apache/commons/**'
 }

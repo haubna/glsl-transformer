@@ -1,7 +1,7 @@
 lexer grammar GLSLLexer;
 
 @header {
-import io.github.douira.glsl_transformer.parser.VersionedGLSLLexer;
+import io.github.douira.glsl_transformer_physics.tree.VersionedGLSLLexer;
 }
 
 options {
@@ -31,7 +31,7 @@ fragment IDENTIFIER_frag: ('a' .. 'z' | 'A' .. 'Z' | '_') (
 fragment WS_frag: [\t\r\u000C ]+;
 fragment NEWLINE: '\r'? '\n';
 fragment NO_NEWLINE: ~('\r' | '\n');
-fragment LINE_CONTINUE_frag: '\\' NEWLINE;
+fragment LINE_CONTINUE: '\\' NEWLINE;
 
 //GLSL tokens
 COLON: ':';
@@ -121,36 +121,36 @@ I8VEC2: 'i8vec2';
 I8VEC3: 'i8vec3';
 I8VEC4: 'i8vec4';
 UINT8: 'uint8_t';
-U8VEC2: 'u8vec2';
-U8VEC3: 'u8vec3';
-U8VEC4: 'u8vec4';
+UI8VEC2: 'ui8vec2';
+UI8VEC3: 'ui8vec3';
+UI8VEC4: 'ui8vec4';
 
 INT16: 'int16_t';
 I16VEC2: 'i16vec2';
 I16VEC3: 'i16vec3';
 I16VEC4: 'i16vec4';
 UINT16: 'uint16_t';
-U16VEC2: 'u16vec2';
-U16VEC3: 'u16vec3';
-U16VEC4: 'u16vec4';
+UI16VEC2: 'ui16vec2';
+UI16VEC3: 'ui16vec3';
+UI16VEC4: 'ui16vec4';
 
 INT32: 'int32_t' | 'int';
 I32VEC2: 'i32vec2' | 'ivec2';
 I32VEC3: 'i32vec3' | 'ivec3';
 I32VEC4: 'i32vec4' | 'ivec4';
 UINT32: 'uint32_t' | 'uint';
-U32VEC2: 'u32vec2' | 'uvec2';
-U32VEC3: 'u32vec3' | 'uvec3';
-U32VEC4: 'u32vec4' | 'uvec4';
+UI32VEC2: 'ui32vec2' | 'uvec2';
+UI32VEC3: 'ui32vec3' | 'uvec3';
+UI32VEC4: 'ui32vec4' | 'uvec4';
 
 INT64: 'int64_t';
 I64VEC2: 'i64vec2';
 I64VEC3: 'i64vec3';
 I64VEC4: 'i64vec4';
 UINT64: 'uint64_t';
-U64VEC2: 'u64vec2';
-U64VEC3: 'u64vec3';
-U64VEC4: 'u64vec4';
+UI64VEC2: 'ui64vec2';
+UI64VEC3: 'ui64vec3';
+UI64VEC4: 'ui64vec4';
 
 FLOAT16: 'float16_t';
 F16VEC2: 'f16vec2';
@@ -325,6 +325,7 @@ fragment NR_PP_PREFIX: '#' [\t ]*;
 PP_ENTER_MODE:
 	NR_PP_PREFIX (
 		'define'
+		| 'include'
 		| 'undef'
 		| 'if'
 		| 'ifdef'
@@ -333,23 +334,21 @@ PP_ENTER_MODE:
 		| 'elif'
 		| 'endif'
 		| 'error'
+		| 'line'
 	) -> channel(PREPROCESSOR), pushMode(Preprocessor);
 PP_EMPTY:
-	NR_PP_PREFIX (WS_frag | LINE_CONTINUE_frag)* NEWLINE -> channel(PREPROCESSOR);
+	NR_PP_PREFIX (WS_frag | LINE_CONTINUE)* NEWLINE -> channel(PREPROCESSOR);
 
 //preprocessor-related tokens
-NR_LINE:
-	'#line' WS_frag DIGIT+ (WS_frag DIGIT+)? (NEWLINE | WS_frag)* NEWLINE -> channel(PREPROCESSOR);
 NR: '#' -> pushMode(NR_Mode);
 IDENTIFIER: IDENTIFIER_frag;
 
-fragment LINE_COMMENT_frag: '//' NO_NEWLINE*;
-
 //performance testing suggests that using the .*? here is fine, alternatives were slower
+fragment LINE_COMMENT_frag: '//' NO_NEWLINE*;
 fragment BLOCK_COMMENT_frag: '/*' .*? '*/';
 
 //hidden comment and whitespace tokens
-LINE_CONTINUE: LINE_CONTINUE_frag -> channel(WHITESPACE);
+LINE_CONTINUATION: LINE_CONTINUE -> channel(WHITESPACE);
 LINE_COMMENT: LINE_COMMENT_frag NEWLINE -> channel(COMMENTS);
 BLOCK_COMMENT: BLOCK_COMMENT_frag -> channel(COMMENTS);
 WS: WS_frag -> channel(WHITESPACE);
@@ -357,15 +356,12 @@ EOL: NEWLINE -> channel(WHITESPACE);
 
 //nr-sign parsing mode
 mode NR_Mode;
-NR_EXTENSION: 'extension';
-NR_VERSION: 'version';
-NR_CUSTOM:
-	'custom' {enableCustomDirective}? -> pushMode(CustomDirective);
-NR_INCLUDE: 'include' {enableIncludeDirective}?;
-NR_PRAGMA: 'pragma';
-NR_PRAGMA_DEBUG: 'debug';
-NR_PRAGMA_OPTIMIZE: 'optimize';
-NR_PRAGMA_INVARIANT: 'invariant';
+EXTENSION: 'extension';
+VERSION: 'version';
+PRAGMA: 'pragma';
+PRAGMA_DEBUG: 'debug';
+PRAGMA_OPTIMIZE: 'optimize';
+PRAGMA_INVARIANT: 'invariant';
 NR_ON: 'on';
 NR_OFF: 'off';
 NR_ALL: 'all';
@@ -398,35 +394,17 @@ NR_GLSL_440: '440';
 NR_GLSL_450: '450';
 NR_GLSL_460: '460';
 
-NR_STRING_START: '"' {enableIncludeDirective}? -> pushMode(String);
-NR_STRING_START_ANGLE:
-	'<' {enableIncludeDirective}? -> pushMode(StringAngle);
 NR_INTCONSTANT: INTCONSTANT_frag;
 NR_IDENTIFIER: IDENTIFIER_frag;
-NR_LINE_CONTINUE: LINE_CONTINUE_frag -> channel(WHITESPACE);
 NR_LINE_COMMENT: LINE_COMMENT_frag -> channel(COMMENTS);
 NR_BLOCK_COMMENT: BLOCK_COMMENT_frag -> channel(COMMENTS);
-NR_EOL: NEWLINE -> popMode;
 NR_WS: WS_frag -> channel(WHITESPACE);
-
-mode String;
-S_CONTENT: ~["\r\n]+;
-S_STRING_END: '"' -> popMode;
-
-mode StringAngle;
-S_CONTENT_ANGLE: ~[>\r\n]+;
-S_STRING_END_ANGLE: '>' -> popMode;
-
-mode CustomDirective;
-C_LINE_COMMENT: LINE_COMMENT_frag -> channel(COMMENTS);
-C_BLOCK_COMMENT: BLOCK_COMMENT_frag -> channel(COMMENTS);
-C_EOL: NEWLINE -> popMode, popMode;
-C_WS: WS_frag -> channel(WHITESPACE);
-C_CONTENT: ~[\n\t\r\u000C ] NO_NEWLINE*;
+NR_LINE_CONTINUATION: LINE_CONTINUE -> channel(WHITESPACE);
+NR_EOL: NEWLINE -> popMode;
 
 //gobble the preprocessor content only if started a preprocessor directive
 mode Preprocessor;
-PP_LINE_CONTINUE: LINE_CONTINUE_frag -> channel(WHITESPACE);
+PP_LINE_CONTINUE: LINE_CONTINUE -> channel(WHITESPACE);
 PP_LINE_COMMENT: LINE_COMMENT_frag -> channel(COMMENTS);
 PP_BLOCK_COMMENT: BLOCK_COMMENT_frag -> channel(COMMENTS);
 PP_EOL: NEWLINE -> channel(PREPROCESSOR), popMode;

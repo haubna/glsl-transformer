@@ -25,30 +25,7 @@ gpg --keyring secring.gpg --export-secret-keys > ~/.gnupg/secring.gpg
 gpg --list-keys --keyid-format short
 ```
 
-Testing only one class, in this case `GrammarDebugTest` can be done like this:
-
-```
-gradle test --tests GrammarDebugTest
-```
-
 # Development Notes
-
-## Conventions
-
-### Generic Type Parameters
-
-Generic type parameters are named with the follwing rules:
-
-- `N` for `extends ASTNode`
-- `C` for `extends ParserRuleContext`
-- `T` for `extends ParseTree`
-- `Child` for `extends ASTNode` if it's the child parameter of an `ASTNode` sub class
-- `J` for `extends JobParameters`
-- `E` for extending some kind of Enum
-- `R` for some other return type
-- `V` for generic (unconstrained) values that aren't any of the above
-
-`P` can't be used because it makes javadoc think it's a `<p>` paragraph tag.
 
 ## AST Development
 

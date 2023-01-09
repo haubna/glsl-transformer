@@ -20,11 +20,13 @@ but is specifically built for this project*/
 parser grammar GLSLParser;
 
 @header {
-import io.github.douira.glsl_transformer.parser.ExtendedParser;
+import io.github.douira.glsl_transformer_physics.tree.ExtendedContext;
+import io.github.douira.glsl_transformer_physics.tree.ExtendedParser;
 }
 
 options {
 	tokenVocab = GLSLLexer;
+	contextSuperClass = ExtendedContext;
 	superClass = ExtendedParser;
 }
 
@@ -33,7 +35,7 @@ translationUnit: versionStatement? externalDeclaration* EOF;
 
 //allows for EXT_null_initializer
 versionStatement:
-	NR NR_VERSION version = (
+	NR VERSION version = (
 		NR_GLSL_110
 		| NR_GLSL_120
 		| NR_GLSLES_100
@@ -56,27 +58,25 @@ versionStatement:
 externalDeclaration:
 	functionDefinition
 	| declaration
-	| pragmaDirective
-	| extensionDirective
-	| customDirective
-	| includeDirective
+	| pragmaStatement
+	| extensionStatement
 	| layoutDefaults
 	| emptyDeclaration;
 
 emptyDeclaration: SEMICOLON;
 
-pragmaDirective:
-	NR NR_PRAGMA stdGL = NR_STDGL? (
+pragmaStatement:
+	NR PRAGMA stdGL = NR_STDGL? (
 		type = NR_IDENTIFIER
-		| type = (NR_PRAGMA_DEBUG | NR_PRAGMA_OPTIMIZE) NR_LPAREN state = (
+		| type = (PRAGMA_DEBUG | PRAGMA_OPTIMIZE) NR_LPAREN state = (
 			NR_ON
 			| NR_OFF
 		) NR_RPAREN
-		| type = NR_PRAGMA_INVARIANT NR_LPAREN state = NR_ALL NR_RPAREN
+		| type = PRAGMA_INVARIANT NR_LPAREN state = NR_ALL NR_RPAREN
 	) NR_EOL;
 
-extensionDirective:
-	NR NR_EXTENSION extensionName = NR_IDENTIFIER (
+extensionStatement:
+	NR EXTENSION extensionName = NR_IDENTIFIER (
 		NR_COLON extensionBehavior = (
 			NR_REQUIRE
 			| NR_ENABLE
@@ -85,20 +85,12 @@ extensionDirective:
 		)
 	)? NR_EOL;
 
-customDirective: NR NR_CUSTOM content = C_CONTENT? C_EOL;
-
-includeDirective:
-	NR NR_INCLUDE (
-		NR_STRING_START content = S_CONTENT? S_STRING_END
-		| angleStart = NR_STRING_START_ANGLE content = S_CONTENT_ANGLE? S_STRING_END_ANGLE
-	) NR_EOL;
-
 layoutDefaults:
 	layoutQualifier layoutMode = (UNIFORM | IN | OUT | BUFFER) SEMICOLON;
 
 functionDefinition: functionPrototype compoundStatement;
 
-// Note: diverges from the spec by explicity adding a method call instead of handling it through postfixExpression in functionIdentifier
+//Note: diverges from the spec by explicity adding a method call instead of handling it through postfixExpression in functionIdentifier
 expression:
 	IDENTIFIER # referenceExpression
 	| (
@@ -321,33 +313,33 @@ builtinTypeSpecifierParseable:
 	| I8VEC3
 	| I8VEC4
 	| UINT8
-	| U8VEC2
-	| U8VEC3
-	| U8VEC4
+	| UI8VEC2
+	| UI8VEC3
+	| UI8VEC4
 	| INT16
 	| I16VEC2
 	| I16VEC3
 	| I16VEC4
 	| UINT16
-	| U16VEC2
-	| U16VEC3
-	| U16VEC4
+	| UI16VEC2
+	| UI16VEC3
+	| UI16VEC4
 	| INT32
 	| I32VEC2
 	| I32VEC3
 	| I32VEC4
 	| UINT32
-	| U32VEC2
-	| U32VEC3
-	| U32VEC4
+	| UI32VEC2
+	| UI32VEC3
+	| UI32VEC4
 	| INT64
 	| I64VEC2
 	| I64VEC3
 	| I64VEC4
 	| UINT64
-	| U64VEC2
-	| U64VEC3
-	| U64VEC4;
+	| UI64VEC2
+	| UI64VEC3
+	| UI64VEC4;
 
 builtinTypeSpecifierFixed:
 	VOID
