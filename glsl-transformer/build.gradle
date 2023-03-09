@@ -53,6 +53,11 @@ shadowJar {
   archiveClassifier.set('')
   archiveVersion.set('')
 
+  dependencies {
+    exclude(dependency('org.antlr:antlr4:4.10.1'))
+    exclude(dependency('com.ibm.icu:icu4j:69.1'))
+  }
+
   relocate 'org', 'physics.org'
   relocate 'com', 'physics.com'
 }
